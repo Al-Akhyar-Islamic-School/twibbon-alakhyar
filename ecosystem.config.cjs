@@ -15,7 +15,8 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         // Must match the "App Port" configured for this site in CloudPanel.
-        PORT: 3000,
+        // 3000 & 3010 sudah dipakai app lain di VPS ini → gunakan 3011.
+        PORT: 3011,
       },
     },
   ],

@@ -21,11 +21,12 @@ Panduan deploy ke VPS memakai **CloudPanel**, **MySQL**, **PM2**, dan alur
 
 1. **Sites → Add Site → Create a Node.js Site**.
 2. **Domain name**: `twibbon.alakhyar.sch.id`
-3. **App Port**: `3000` (harus sama dengan `PORT` di `ecosystem.config.cjs`).
+3. **App Port**: `3011` (harus sama dengan `PORT` di `ecosystem.config.cjs`;
+   port 3000 & 3010 sudah dipakai app lain di VPS).
 4. **Node.js version**: 20.
 5. Simpan. CloudPanel otomatis membuat:
    - direktori site: `/home/<site-user>/htdocs/twibbon.alakhyar.sch.id`
-   - reverse proxy Nginx dari `:443/:80` → `127.0.0.1:3000`.
+   - reverse proxy Nginx dari `:443/:80` → `127.0.0.1:3011`.
 
 > Command "App start"/PM2 bawaan CloudPanel bisa dinonaktifkan; kita jalankan
 > PM2 sendiri (langkah 5) agar terkontrol.
