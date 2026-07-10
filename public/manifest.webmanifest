@@ -1,0 +1,20 @@
+{
+  "name": "Twibbon Al Akhyar",
+  "short_name": "Twibbon",
+  "description": "Buat & bagikan twibbon resmi Yayasan Al Akhyar. Pilih twibbon aktif, pasang foto, unduh.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F5F8FA",
+  "theme_color": "#006195",
+  "lang": "id",
+  "dir": "ltr",
+  "categories": ["education", "photo", "utilities"],
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

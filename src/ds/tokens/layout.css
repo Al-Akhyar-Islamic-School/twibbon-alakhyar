@@ -1,0 +1,49 @@
+/* ============================================================
+   Al Akhyar — Spacing, Radius, Shadow, Motion Tokens
+   Base unit: 4px
+   ============================================================ */
+:root {
+  /* Spacing scale */
+  --space-0: 0;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+
+  /* Radii — Dinar app uses generously rounded cards & pills */
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --radius-2xl: 28px;
+  --radius-pill: 999px;
+
+  /* Shadows — soft, low-contrast, cool-tinted */
+  --shadow-xs: 0 1px 2px rgba(0, 97, 149, 0.06);
+  --shadow-sm: 0 2px 8px rgba(16, 42, 66, 0.06);
+  --shadow-md: 0 6px 18px rgba(16, 42, 66, 0.08);
+  --shadow-lg: 0 14px 34px rgba(16, 42, 66, 0.12);
+  --shadow-brand: 0 10px 24px rgba(0, 97, 149, 0.22);
+
+  /* Focus ring */
+  --ring-brand: 0 0 0 3px rgba(0, 97, 149, 0.28);
+
+  /* Motion */
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1); /* @kind other */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1); /* @kind other */
+  --dur-fast: 120ms; /* @kind other */
+  --dur-base: 200ms; /* @kind other */
+  --dur-slow: 320ms; /* @kind other */
+
+  /* Layout */
+  --container-max: 1200px; /* @kind other */
+  --app-width: 390px; /* @kind other */
+}

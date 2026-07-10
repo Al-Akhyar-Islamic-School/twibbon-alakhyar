@@ -1,0 +1,54 @@
+// Twibbon Al Akhyar — data model (see PRD §9).
+// SQLite for simple self-hosting; switch `provider` to postgresql for prod.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String    @id @default(uuid())
+  email     String    @unique
+  name      String?
+  image     String?
+  // "staff" (default, Opsi A: any @*.alakhyar.sch.id can upload) or "admin".
+  role      String    @default("staff")
+  createdAt DateTime  @default(now())
+  twibbons  Twibbon[]
+}
+
+model Twibbon {
+  id          String    @id @default(uuid())
+  title       String
+  description String?   @db.Text
+  // Storage key of the PNG (served via /file/[key]); see src/lib/storage.ts.
+  imageKey    String
+  width       Int
+  height      Int
+  fileSize    Int
+  isActive    Boolean   @default(true)
+  startDate   DateTime?
+  endDate     DateTime?
+  // Soft delete — never hard-delete so links/OG previews degrade gracefully.
+  deletedAt   DateTime?
+  createdById String
+  createdBy   User      @relation(fields: [createdById], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  downloads   DownloadLog[]
+
+  @@index([isActive, deletedAt])
+}
+
+// Anonymous usage counter (FR-15). No personal data, no photos — ever.
+model DownloadLog {
+  id        String   @id @default(uuid())
+  twibbonId String
+  twibbon   Twibbon  @relation(fields: [twibbonId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@index([twibbonId])
+}

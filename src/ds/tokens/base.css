@@ -1,0 +1,26 @@
+/* ============================================================
+   Al Akhyar — Base element defaults (light, optional reset)
+   ============================================================ */
+:root {
+  color-scheme: light;
+}
+
+body {
+  font-family: var(--font-sans);
+  color: var(--text-body);
+  background: var(--surface-page);
+  font-size: var(--fs-body);
+  line-height: var(--lh-normal);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Utility text roles (usable directly in cards & kits) */
+.ak-display { font-family: var(--font-display); font-weight: var(--fw-bold); font-size: var(--fs-display); line-height: var(--lh-tight); letter-spacing: var(--ls-tight); color: var(--text-heading); }
+.ak-h1 { font-family: var(--font-sans); font-weight: var(--fw-bold); font-size: var(--fs-h1); line-height: var(--lh-tight); letter-spacing: var(--ls-tight); color: var(--text-heading); }
+.ak-h2 { font-family: var(--font-sans); font-weight: var(--fw-bold); font-size: var(--fs-h2); line-height: var(--lh-snug); color: var(--text-heading); }
+.ak-h3 { font-family: var(--font-sans); font-weight: var(--fw-semibold); font-size: var(--fs-h3); line-height: var(--lh-snug); color: var(--text-heading); }
+.ak-title { font-weight: var(--fw-semibold); font-size: var(--fs-title); color: var(--text-heading); }
+.ak-body { font-size: var(--fs-body); color: var(--text-body); }
+.ak-muted { font-size: var(--fs-sm); color: var(--text-muted); }
+.ak-eyebrow { font-size: var(--fs-xs); font-weight: var(--fw-bold); letter-spacing: var(--ls-caps); text-transform: uppercase; color: var(--brand); }

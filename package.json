@@ -1,0 +1,35 @@
+{
+  "name": "twibbon-alakhyar",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Twibbon Al Akhyar — PWA pembuat twibbon Yayasan Al Akhyar",
+  "scripts": {
+    "dev": "next dev",
+    "build": "prisma generate && next build",
+    "start": "next start",
+    "lint": "next lint",
+    "postinstall": "prisma generate",
+    "db:push": "prisma db push",
+    "db:seed": "node prisma/seed.mjs",
+    "icons": "node scripts/generate-icons.mjs",
+    "deploy:update": "npm ci && npm run build && npm run db:push && pm2 restart ecosystem.config.cjs --update-env"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.mjs"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "next": "14.2.15",
+    "next-auth": "5.0.0-beta.22",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "sharp": "^0.33.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "prisma": "^5.22.0",
+    "typescript": "^5.5.3"
+  }
+}
