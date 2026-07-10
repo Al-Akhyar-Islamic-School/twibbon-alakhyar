@@ -11,7 +11,10 @@ export async function GET(
   if (!file) {
     return new Response('Not found', { status: 404 });
   }
-  return new Response(file.buffer, {
+  // Wrap the Node Buffer in a Uint8Array — a valid BodyInit that satisfies the
+  // Web Response type (newer @types/node no longer treats Buffer as BodyInit).
+  const body = new Uint8Array(file.buffer);
+  return new Response(body, {
     status: 200,
     headers: {
       'Content-Type': 'image/png',
