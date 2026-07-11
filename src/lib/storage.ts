@@ -1,4 +1,4 @@
-import { mkdir, writeFile, readFile, stat } from 'node:fs/promises';
+import { mkdir, writeFile, readFile, stat, rm } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
 
@@ -39,4 +39,16 @@ export async function getFile(
 
 export function publicUrlForKey(key: string): string {
   return `/file/${key}`;
+}
+
+// Best-effort delete of a stored file. Used when a twibbon is removed or has
+// expired so it stops taking up disk space on the server.
+export async function deleteFile(key: string): Promise<void> {
+  if (!key) return;
+  try {
+    const p = safeKeyToPath(key);
+    await rm(p, { force: true });
+  } catch {
+    // ignore — key invalid or file already gone
+  }
 }

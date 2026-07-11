@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { validateTwibbonBuffer } from '@/lib/validateTwibbon';
-import { putPng } from '@/lib/storage';
+import { putPng, deleteFile } from '@/lib/storage';
 import { serializeTwibbon } from '@/lib/twibbon';
 
 // GET /api/twibbons/[id] — public read of a single (non-deleted) twibbon.
@@ -92,9 +92,12 @@ export async function DELETE(
   const existing = await ownedOr404(params.id, uid);
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
+  // Free the disk immediately; keep the row (soft delete) so download logs and
+  // any cached links degrade gracefully. imageKey is cleared so it's not re-served.
+  await deleteFile(existing.imageKey);
   await prisma.twibbon.update({
     where: { id: params.id },
-    data: { deletedAt: new Date(), isActive: false },
+    data: { deletedAt: new Date(), isActive: false, imageKey: '' },
   });
   return NextResponse.json({ ok: true });
 }

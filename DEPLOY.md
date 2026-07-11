@@ -140,6 +140,13 @@ sehingga file twibbon yang sudah diunggah dan konfigurasi tetap aman.
   mysqldump -u twibbon -p twibbon > backup-$(date +%F).sql
   tar czf storage-$(date +%F).tgz storage/
   ```
+- **Auto-hapus file kedaluwarsa**: twibbon yang dihapus manual sudah langsung
+  menghapus filenya. Untuk twibbon yang **berakhir** (lewat `end_date`), jadwalkan
+  pembersih di **CloudPanel → Cron Jobs** (mis. tiap hari 02:00):
+  ```
+  cd /home/<site-user>/htdocs/twibbon.alakhyar.sch.id && node scripts/cleanup.mjs
+  ```
+  Atau jalankan manual sewaktu-waktu: `npm run cleanup`.
 - **Persistensi upload**: file twibbon disimpan di `storage/` pada direktori app.
   Jangan hapus folder ini saat deploy. (Untuk skala sangat besar / multi-server,
   pindah ke object storage + CDN — ganti `src/lib/storage.ts`.)

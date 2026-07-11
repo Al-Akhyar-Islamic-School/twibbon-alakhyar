@@ -206,7 +206,7 @@ export function DashboardClient({ initialTwibbons }: { initialTwibbons: TwibbonD
                   Ketuk untuk pilih file PNG transparan
                   <br />
                   <span style={{ color: 'var(--text-muted)', fontWeight: 400, fontSize: 12 }}>
-                    Rekomendasi 1080×1080px · maks 5MB
+                    Rekomendasi 1080×1080px · maks 10MB
                   </span>
                 </span>
               )}

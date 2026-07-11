@@ -11,6 +11,7 @@
     "postinstall": "prisma generate",
     "db:push": "prisma db push",
     "db:seed": "node prisma/seed.mjs",
+    "cleanup": "node scripts/cleanup.mjs",
     "icons": "node scripts/generate-icons.mjs",
     "deploy:update": "npm ci && npm run build && npm run db:push && pm2 restart ecosystem.config.cjs --update-env"
   },

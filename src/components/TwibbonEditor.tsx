@@ -306,6 +306,23 @@ export function TwibbonEditor({ twibbon }: { twibbon: TwibbonDTO }) {
     }
   };
 
+  // Invite others to use this twibbon — shares the twibbon's link + a default
+  // ajakan text. Distinct from onShare, which shares the finished image.
+  const onShareInvite = async () => {
+    const link = `${window.location.origin}/editor/${twibbon.id}`;
+    const text = `Ayo ikut keseruan – ${twibbon.title}. Gunakan Twibbon ini sekarang:`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: twibbon.title, text, url: link });
+      } else {
+        await navigator.clipboard.writeText(`${text} ${link}`);
+        alert('Link twibbon disalin ke clipboard.');
+      }
+    } catch {
+      /* user cancelled */
+    }
+  };
+
   const onShare = async () => {
     if (!hasPhoto) return;
     const blob = await renderFinalBlob();
@@ -316,7 +333,9 @@ export function TwibbonEditor({ twibbon }: { twibbon: TwibbonDTO }) {
         await navigator.share({
           files: [file],
           title: twibbon.title,
-          text: `Twibbon ${twibbon.title} — Yayasan Al Akhyar\ncreated on twibbon.alakhyar.sch.id`,
+          // Single line — WhatsApp often keeps only the first line of the caption
+          // when an image is attached, so avoid line breaks here.
+          text: `Twibbon ${twibbon.title} — Yayasan Al Akhyar · created on twibbon.alakhyar.sch.id`,
         });
         logDownload();
       }
@@ -357,7 +376,7 @@ export function TwibbonEditor({ twibbon }: { twibbon: TwibbonDTO }) {
         >
           ‹
         </Link>
-        <div style={{ minWidth: 0 }}>
+        <div style={{ minWidth: 0, flex: 1 }}>
           <div style={{ fontWeight: 700, fontSize: 17, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {twibbon.title}
           </div>
@@ -365,6 +384,33 @@ export function TwibbonEditor({ twibbon }: { twibbon: TwibbonDTO }) {
             {twibbon.width}×{twibbon.height}px
           </div>
         </div>
+        <button
+          onClick={onShareInvite}
+          aria-label="Bagikan twibbon ini"
+          style={{
+            background: 'rgba(255,255,255,0.16)',
+            color: '#fff',
+            border: 'none',
+            height: 32,
+            padding: '0 12px',
+            borderRadius: 'var(--radius-pill)',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: 'pointer',
+            flexShrink: 0,
+          }}
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="18" cy="5" r="3" />
+            <circle cx="6" cy="12" r="3" />
+            <circle cx="18" cy="19" r="3" />
+            <path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4" />
+          </svg>
+          Bagikan
+        </button>
       </div>
 
       {/* Canvas stage */}
