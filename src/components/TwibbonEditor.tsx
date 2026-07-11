@@ -14,6 +14,9 @@ import type { TwibbonDTO } from '@/lib/twibbon';
 type Transform = { scale: number; cx: number; cy: number };
 
 const MAX_ZOOM_FACTOR = 6; // photo can be enlarged up to 6× its cover size
+// Photo can be shrunk until its width is this fraction of the twibbon width
+// (below the cover size — transparent gaps around the photo are allowed).
+const MIN_WIDTH_RATIO = 0.5;
 const EDIT_ALPHA = 0.65; // twibbon opacity while positioning (FR-06)
 
 function loadImage(src: string, crossOrigin?: string): Promise<HTMLImageElement> {
@@ -37,12 +40,16 @@ export function TwibbonEditor({ twibbon }: { twibbon: TwibbonDTO }) {
   const photoImgRef = useRef<HTMLImageElement | null>(null);
   const transformRef = useRef<Transform>({ scale: 1, cx: W / 2, cy: H / 2 });
   const coverScaleRef = useRef<number>(1);
+  // Smallest allowed zoom factor (relative to cover), set per photo so the
+  // photo can shrink to MIN_WIDTH_RATIO of the twibbon width.
+  const minFactorRef = useRef<number>(1);
   const editModeRef = useRef<boolean>(true);
 
   const [twibbonReady, setTwibbonReady] = useState(false);
   const [hasPhoto, setHasPhoto] = useState(false);
   const [editMode, setEditMode] = useState(true);
   const [zoom, setZoom] = useState(1); // factor over cover scale (slider)
+  const [minZoom, setMinZoom] = useState(1); // slider lower bound (< 1 allowed)
   const [downloading, setDownloading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [canShare, setCanShare] = useState(false);
@@ -50,12 +57,26 @@ export function TwibbonEditor({ twibbon }: { twibbon: TwibbonDTO }) {
   // ---- drawing -------------------------------------------------------------
   const clampTransform = useCallback(
     (t: Transform): Transform => {
-      const drawnW = (photoImgRef.current?.naturalWidth ?? 1) * t.scale;
-      const drawnH = (photoImgRef.current?.naturalHeight ?? 1) * t.scale;
-      // Keep the photo covering the whole canvas — no empty gaps (FR-04).
-      const cx = Math.min(Math.max(t.cx, W - drawnW / 2), drawnW / 2);
-      const cy = Math.min(Math.max(t.cy, H - drawnH / 2), drawnH / 2);
-      return { scale: t.scale, cx, cy };
+      const photo = photoImgRef.current;
+      const pw = photo?.naturalWidth ?? 1;
+      const ph = photo?.naturalHeight ?? 1;
+      // Clamp scale between the min (can shrink below cover) and the max zoom.
+      const minScale = coverScaleRef.current * minFactorRef.current;
+      const maxScale = coverScaleRef.current * MAX_ZOOM_FACTOR;
+      const scale = Math.min(Math.max(t.scale, minScale), maxScale);
+
+      const drawnW = pw * scale;
+      const drawnH = ph * scale;
+      // Two regimes, handled by one min/max clamp:
+      //  • photo larger than canvas → keep it covering (no empty edge)
+      //  • photo smaller than canvas → keep it fully inside the canvas
+      const loX = Math.min(drawnW / 2, W - drawnW / 2);
+      const hiX = Math.max(drawnW / 2, W - drawnW / 2);
+      const loY = Math.min(drawnH / 2, H - drawnH / 2);
+      const hiY = Math.max(drawnH / 2, H - drawnH / 2);
+      const cx = Math.min(Math.max(t.cx, loX), hiX);
+      const cy = Math.min(Math.max(t.cy, loY), hiY);
+      return { scale, cx, cy };
     },
     [W, H]
   );
@@ -120,9 +141,14 @@ export function TwibbonEditor({ twibbon }: { twibbon: TwibbonDTO }) {
       try {
         const img = await loadImage(url);
         photoImgRef.current = img;
-        // Initial fit: cover the canvas, centered (FR-04).
+        // Initial fit: cover the canvas, centered.
         const cover = Math.max(W / img.naturalWidth, H / img.naturalHeight);
         coverScaleRef.current = cover;
+        // Allow shrinking until the photo's width is MIN_WIDTH_RATIO of the
+        // twibbon width, expressed as a factor relative to the cover scale.
+        const minScale = (MIN_WIDTH_RATIO * W) / img.naturalWidth;
+        minFactorRef.current = Math.min(1, minScale / cover);
+        setMinZoom(minFactorRef.current);
         transformRef.current = clampTransform({ scale: cover, cx: W / 2, cy: H / 2 });
         setZoom(1);
         editModeRef.current = true;
@@ -144,7 +170,7 @@ export function TwibbonEditor({ twibbon }: { twibbon: TwibbonDTO }) {
     (factor: number, aboutX = W / 2, aboutY = H / 2) => {
       const photo = photoImgRef.current;
       if (!photo) return;
-      const clampedFactor = Math.min(Math.max(factor, 1), MAX_ZOOM_FACTOR);
+      const clampedFactor = Math.min(Math.max(factor, minFactorRef.current), MAX_ZOOM_FACTOR);
       const newScale = coverScaleRef.current * clampedFactor;
       const t = transformRef.current;
       // Keep the photo point under (aboutX,aboutY) stationary while zooming.
@@ -496,7 +522,7 @@ export function TwibbonEditor({ twibbon }: { twibbon: TwibbonDTO }) {
                 </button>
                 <input
                   type="range"
-                  min={1}
+                  min={minZoom}
                   max={MAX_ZOOM_FACTOR}
                   step={0.01}
                   value={zoom}
