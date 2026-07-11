@@ -52,6 +52,26 @@ export function TwibbonCard({ twibbon }: { twibbon: TwibbonDTO }) {
               dibuat oleh {twibbon.createdByName}
             </div>
           )}
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+              marginTop: 6,
+              fontSize: 11,
+              fontWeight: 600,
+              color: 'var(--brand)',
+            }}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+            {(twibbon.downloadCount ?? 0) > 0
+              ? `${twibbon.downloadCount} kali dipakai`
+              : 'Belum dipakai'}
+          </div>
         </div>
       </Card>
     </Link>

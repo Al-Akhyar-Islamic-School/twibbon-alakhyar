@@ -31,11 +31,16 @@ export async function GET(req: NextRequest) {
   const rows = await prisma.twibbon.findMany({
     where: { isActive: true, deletedAt: null },
     orderBy: { createdAt: 'desc' },
-    include: { createdBy: { select: { name: true } } },
+    include: {
+      createdBy: { select: { name: true } },
+      _count: { select: { downloads: true } },
+    },
   });
   const now = new Date();
   return NextResponse.json({
-    twibbons: rows.filter((t) => isPubliclyVisible(t, now)).map((t) => serializeTwibbon(t)),
+    twibbons: rows
+      .filter((t) => isPubliclyVisible(t, now))
+      .map((t) => serializeTwibbon(t, { downloadCount: t._count.downloads })),
   });
 }
 
