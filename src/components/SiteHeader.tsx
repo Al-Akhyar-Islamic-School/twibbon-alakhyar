@@ -26,23 +26,12 @@ export async function SiteHeader() {
           gap: 12,
         }}
       >
-        <Link
-          href="/"
-          aria-label="Twibbon Al Akhyar"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            background: '#fff',
-            padding: '8px 14px',
-            borderRadius: 'var(--radius-pill)',
-            boxShadow: 'var(--shadow-sm)',
-          }}
-        >
+        <Link href="/" aria-label="Twibbon Al Akhyar" style={{ display: 'inline-flex', alignItems: 'center' }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/brand/logo-twibbon.png"
             alt="Twibbon Al Akhyar"
-            style={{ height: 44, width: 'auto', display: 'block' }}
+            style={{ height: 52, width: 'auto', display: 'block' }}
           />
         </Link>
 
