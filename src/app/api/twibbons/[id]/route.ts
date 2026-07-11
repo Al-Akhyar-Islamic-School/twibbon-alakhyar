@@ -44,6 +44,9 @@ export async function PATCH(
   if (form.has('description')) {
     data.description = String(form.get('description') ?? '').trim() || null;
   }
+  if (form.has('caption')) {
+    data.caption = String(form.get('caption') ?? '').trim() || null;
+  }
   if (form.has('isActive')) {
     data.isActive = String(form.get('isActive')) !== 'false';
   }

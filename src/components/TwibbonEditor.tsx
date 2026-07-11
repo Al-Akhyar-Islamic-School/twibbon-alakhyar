@@ -332,11 +332,18 @@ export function TwibbonEditor({ twibbon }: { twibbon: TwibbonDTO }) {
     }
   };
 
+  // A staff-provided caption overrides the default share text; the app always
+  // appends the site credit after it.
+  const captionShare = twibbon.caption?.trim()
+    ? `${twibbon.caption.trim()}\n\ncreated on twibbon.alakhyar.sch.id`
+    : null;
+
   // Invite others to use this twibbon — shares the twibbon's link + a default
   // ajakan text. Distinct from onShare, which shares the finished image.
   const onShareInvite = async () => {
     const link = `${window.location.origin}/editor/${twibbon.id}`;
-    const text = `Ayo ikut keseruan – ${twibbon.title}. Gunakan Twibbon ini sekarang:`;
+    const text =
+      captionShare ?? `Ayo ikut keseruan – ${twibbon.title}. Gunakan Twibbon ini sekarang:`;
     try {
       if (navigator.share) {
         await navigator.share({ title: twibbon.title, text, url: link });
@@ -359,9 +366,11 @@ export function TwibbonEditor({ twibbon }: { twibbon: TwibbonDTO }) {
         await navigator.share({
           files: [file],
           title: twibbon.title,
-          // Single line — WhatsApp often keeps only the first line of the caption
-          // when an image is attached, so avoid line breaks here.
-          text: `Twibbon ${twibbon.title} — Yayasan Al Akhyar · created on twibbon.alakhyar.sch.id`,
+          // Custom caption if set; otherwise a single-line default (WhatsApp
+          // often keeps only the first line of an image caption).
+          text:
+            captionShare ??
+            `Twibbon ${twibbon.title} — Yayasan Al Akhyar · created on twibbon.alakhyar.sch.id`,
         });
         logDownload();
       }

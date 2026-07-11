@@ -54,6 +54,7 @@ export async function POST(req: NextRequest) {
   const file = form.get('file');
   const title = String(form.get('title') ?? '').trim();
   const description = String(form.get('description') ?? '').trim();
+  const caption = String(form.get('caption') ?? '').trim();
   const startRaw = String(form.get('startDate') ?? '').trim();
   const endRaw = String(form.get('endDate') ?? '').trim();
   const isActive = String(form.get('isActive') ?? 'true') !== 'false';
@@ -85,6 +86,7 @@ export async function POST(req: NextRequest) {
     data: {
       title,
       description: description || null,
+      caption: caption || null,
       imageKey,
       width: check.width,
       height: check.height,

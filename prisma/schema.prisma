@@ -24,6 +24,9 @@ model Twibbon {
   id          String    @id @default(uuid())
   title       String
   description String?   @db.Text
+  // Custom share caption. When set, replaces the default share text; the app
+  // always appends the "created on twibbon.alakhyar.sch.id" credit after it.
+  caption     String?   @db.Text
   // Storage key of the PNG (served via /file/[key]); see src/lib/storage.ts.
   imageKey    String
   width       Int

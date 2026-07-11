@@ -10,6 +10,7 @@ type FormState = {
   id?: string;
   title: string;
   description: string;
+  caption: string;
   startDate: string;
   endDate: string;
   isActive: boolean;
@@ -20,6 +21,7 @@ type FormState = {
 const emptyForm: FormState = {
   title: '',
   description: '',
+  caption: '',
   startDate: '',
   endDate: '',
   isActive: true,
@@ -55,6 +57,7 @@ export function DashboardClient({ initialTwibbons }: { initialTwibbons: TwibbonD
       id: t.id,
       title: t.title,
       description: t.description || '',
+      caption: t.caption || '',
       startDate: t.startDate ? t.startDate.slice(0, 10) : '',
       endDate: t.endDate ? t.endDate.slice(0, 10) : '',
       isActive: t.isActive,
@@ -89,6 +92,7 @@ export function DashboardClient({ initialTwibbons }: { initialTwibbons: TwibbonD
     const fd = new FormData();
     fd.set('title', form.title.trim());
     fd.set('description', form.description.trim());
+    fd.set('caption', form.caption.trim());
     fd.set('startDate', form.startDate);
     fd.set('endDate', form.endDate);
     fd.set('isActive', String(form.isActive));
@@ -234,6 +238,20 @@ export function DashboardClient({ initialTwibbons }: { initialTwibbons: TwibbonD
                 setForm((f) => ({ ...f, description: e.target.value }))
               }
             />
+            <div>
+              <label style={dateLabel}>Caption Share (opsional)</label>
+              <textarea
+                value={form.caption}
+                onChange={(e) => setForm((f) => ({ ...f, caption: e.target.value }))}
+                placeholder="mis. Ayo ramaikan Milad ke-10 Al Akhyar! Pasang twibbonmu sekarang."
+                rows={3}
+                style={{ ...dateInput, resize: 'vertical', lineHeight: 1.5 }}
+              />
+              <span style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginTop: 5 }}>
+                Menggantikan teks bawaan saat twibbon dibagikan. Kredit{' '}
+                <em>created on twibbon.alakhyar.sch.id</em> otomatis ditambahkan di akhir.
+              </span>
+            </div>
 
             <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
               <div style={{ flex: 1 }}>

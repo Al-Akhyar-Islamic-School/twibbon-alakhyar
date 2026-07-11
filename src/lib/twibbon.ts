@@ -15,6 +15,7 @@ export type TwibbonDTO = {
   id: string;
   title: string;
   description: string | null;
+  caption: string | null;
   imageUrl: string;
   width: number;
   height: number;
@@ -37,6 +38,7 @@ export function serializeTwibbon(
     id: t.id,
     title: t.title,
     description: t.description,
+    caption: t.caption,
     imageUrl: publicUrlForKey(t.imageKey),
     width: t.width,
     height: t.height,
