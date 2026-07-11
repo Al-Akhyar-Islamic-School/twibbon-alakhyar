@@ -97,7 +97,8 @@ export default async function HomePage() {
             color: 'var(--text-muted)',
           }}
         >
-          © {new Date().getFullYear()} Yayasan Al Akhyar · Unggul &amp; Berakhlak
+          © {new Date().getFullYear()} Yayasan Al Akhyar · Unggul &amp; Berakhlak · Made with
+          love f/ @azhardz
         </footer>
       </main>
     </>
