@@ -31,6 +31,7 @@ export async function GET(req: NextRequest) {
   const rows = await prisma.twibbon.findMany({
     where: { isActive: true, deletedAt: null },
     orderBy: { createdAt: 'desc' },
+    include: { createdBy: { select: { name: true } } },
   });
   const now = new Date();
   return NextResponse.json({

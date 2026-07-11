@@ -22,11 +22,15 @@ export type TwibbonDTO = {
   startDate: string | null;
   endDate: string | null;
   createdAt: string;
+  createdByName: string | null;
   downloadCount?: number;
 };
 
+// A Twibbon row that may have its creator relation included in the query.
+type TwibbonWithCreator = Twibbon & { createdBy?: { name: string | null } | null };
+
 export function serializeTwibbon(
-  t: Twibbon,
+  t: TwibbonWithCreator,
   extra?: { downloadCount?: number }
 ): TwibbonDTO {
   return {
@@ -40,6 +44,7 @@ export function serializeTwibbon(
     startDate: t.startDate ? t.startDate.toISOString() : null,
     endDate: t.endDate ? t.endDate.toISOString() : null,
     createdAt: t.createdAt.toISOString(),
+    createdByName: t.createdBy?.name ?? null,
     ...(extra?.downloadCount != null ? { downloadCount: extra.downloadCount } : {}),
   };
 }

@@ -47,6 +47,11 @@ export function TwibbonCard({ twibbon }: { twibbon: TwibbonDTO }) {
               {range}
             </div>
           )}
+          {twibbon.createdByName && (
+            <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 2 }}>
+              dibuat oleh {twibbon.createdByName}
+            </div>
+          )}
         </div>
       </Card>
     </Link>

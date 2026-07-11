@@ -316,7 +316,7 @@ export function TwibbonEditor({ twibbon }: { twibbon: TwibbonDTO }) {
         await navigator.share({
           files: [file],
           title: twibbon.title,
-          text: `Twibbon ${twibbon.title} — Yayasan Al Akhyar`,
+          text: `Twibbon ${twibbon.title} — Yayasan Al Akhyar\ncreated on twibbon.alakhyar.sch.id`,
         });
         logDownload();
       }
