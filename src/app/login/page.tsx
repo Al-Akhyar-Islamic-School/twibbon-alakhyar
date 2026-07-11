@@ -4,7 +4,7 @@ import { auth, signIn } from '@/lib/auth';
 import { ALLOWED_DOMAIN } from '@/lib/domain';
 import { LoginButton } from './LoginButton';
 
-export const metadata = { title: 'Login Staff' };
+export const metadata = { title: 'Buat Twibbon' };
 
 const googleConfigured = !!process.env.AUTH_GOOGLE_ID && !!process.env.AUTH_GOOGLE_SECRET;
 
@@ -36,11 +36,11 @@ export default async function LoginPage({
           style={{ width: '100%', maxWidth: 240, height: 'auto' }}
         />
         <div>
-          <h1 style={{ fontSize: 22, margin: 0, color: 'var(--text-heading)' }}>Login Staff</h1>
+          <h1 style={{ fontSize: 22, margin: 0, color: 'var(--text-heading)' }}>Buat Twibbon</h1>
           <p style={{ margin: '8px 0 0', color: 'var(--text-muted)', fontSize: 14 }}>
             Masuk dengan email sekolah{' '}
             <strong style={{ color: 'var(--brand)' }}>@{ALLOWED_DOMAIN}</strong> (termasuk
-            subdomain jenjang) untuk mengelola twibbon.
+            subdomain jenjang) untuk membuat &amp; mengelola twibbon.
           </p>
         </div>
 

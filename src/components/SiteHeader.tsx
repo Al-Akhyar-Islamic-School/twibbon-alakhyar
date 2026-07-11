@@ -31,7 +31,7 @@ export async function SiteHeader() {
           <img
             src="/brand/logo-twibbon.png"
             alt="Twibbon Al Akhyar"
-            style={{ height: 52, width: 'auto', display: 'block' }}
+            style={{ height: 98, width: 'auto', display: 'block' }}
           />
         </Link>
 
@@ -74,7 +74,7 @@ export async function SiteHeader() {
               fontWeight: 700,
             }}
           >
-            Login Staff
+            Buat Twibbon
           </Link>
         )}
       </div>
