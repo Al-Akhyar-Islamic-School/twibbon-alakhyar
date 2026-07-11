@@ -30,7 +30,11 @@ export default async function LoginPage({
     >
       <div className="stack gap-4" style={{ alignItems: 'center', maxWidth: 360 }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/brand/logo-yayasan.png" alt="Yayasan Al Akhyar" style={{ height: 56, width: 'auto' }} />
+        <img
+          src="/brand/logo-twibbon.png"
+          alt="Twibbon Al Akhyar"
+          style={{ width: '100%', maxWidth: 240, height: 'auto' }}
+        />
         <div>
           <h1 style={{ fontSize: 22, margin: 0, color: 'var(--text-heading)' }}>Login Staff</h1>
           <p style={{ margin: '8px 0 0', color: 'var(--text-muted)', fontSize: 14 }}>

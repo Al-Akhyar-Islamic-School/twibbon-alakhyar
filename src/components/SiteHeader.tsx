@@ -26,12 +26,23 @@ export async function SiteHeader() {
           gap: 12,
         }}
       >
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <Link
+          href="/"
+          aria-label="Twibbon Al Akhyar"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            background: '#fff',
+            padding: '8px 14px',
+            borderRadius: 'var(--radius-pill)',
+            boxShadow: 'var(--shadow-sm)',
+          }}
+        >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/brand/logo-yayasan-white.png"
-            alt="Yayasan Al Akhyar"
-            style={{ height: 34, width: 'auto' }}
+            src="/brand/logo-twibbon.png"
+            alt="Twibbon Al Akhyar"
+            style={{ height: 44, width: 'auto', display: 'block' }}
           />
         </Link>
 
@@ -80,19 +91,16 @@ export async function SiteHeader() {
       </div>
 
       <div style={{ marginTop: 18 }}>
-        <div style={{ fontSize: 12, opacity: 0.85, fontWeight: 600 }}>
-          Assalamu&apos;alaikum 👋
-        </div>
         <h1
           style={{
             fontFamily: 'var(--font-display)',
-            fontSize: 26,
+            fontSize: 22,
             fontWeight: 700,
-            margin: '4px 0 0',
+            margin: 0,
             letterSpacing: 'var(--ls-tight)',
           }}
         >
-          Twibbon Al Akhyar
+          Assalamu&apos;alaikum 👋
         </h1>
         <p style={{ margin: '6px 0 0', fontSize: 13, opacity: 0.9, maxWidth: 460 }}>
           Pilih twibbon aktif, pasang fotomu, lalu unduh. Semua diproses di

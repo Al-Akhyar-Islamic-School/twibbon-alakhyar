@@ -24,12 +24,25 @@ function EmptyState() {
         color: 'var(--text-muted)',
       }}
     >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src="/illustrations/siswa-sd-belajar.png"
-        alt=""
-        style={{ width: 160, height: 'auto', margin: '0 auto var(--space-4)', borderRadius: 'var(--radius-lg)' }}
-      />
+      <div
+        aria-hidden="true"
+        style={{
+          width: 96,
+          height: 96,
+          margin: '0 auto var(--space-4)',
+          borderRadius: '50%',
+          background: 'var(--brand-soft)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="3" />
+          <circle cx="8.5" cy="8.5" r="1.6" />
+          <path d="M21 15l-5-5L5 21" />
+        </svg>
+      </div>
       <h2 style={{ margin: 0, fontSize: 18, color: 'var(--text-heading)', fontWeight: 700 }}>
         Belum Ada Twibbon Aktif
       </h2>
