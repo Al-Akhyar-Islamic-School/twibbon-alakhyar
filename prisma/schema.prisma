@@ -1,7 +1,10 @@
 // Twibbon Al Akhyar — data model (see PRD §9).
-// SQLite for simple self-hosting; switch `provider` to postgresql for prod.
+// MySQL-compatible: TiDB Cloud in production (provider stays "mysql").
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  // "native" for local dev / the build machine; rhel-openssl-3.0.x for the
+  // Netlify Functions runtime (AWS Lambda on Amazon Linux 2023).
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
@@ -27,7 +30,8 @@ model Twibbon {
   // Custom share caption. When set, replaces the default share text; the app
   // always appends the "created on twibbon.alakhyar.sch.id" credit after it.
   caption     String?   @db.Text
-  // Storage key of the PNG (served via /file/[key]); see src/lib/storage.ts.
+  // R2 object key `<uuid>.png` (served via /file/[key]); see src/lib/storage.ts.
+  // Empty string once the file has been deleted (soft delete / cleanup).
   imageKey    String
   width       Int
   height      Int

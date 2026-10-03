@@ -1,13 +1,15 @@
 // Seeds a demo staff user and two sample twibbon frames (real transparent PNGs)
 // so Home + the editor are usable without configuring OAuth. Idempotent.
 import { PrismaClient } from '@prisma/client';
+import { PutObjectCommand } from '@aws-sdk/client-s3';
 import sharp from 'sharp';
-import { mkdir, writeFile } from 'node:fs/promises';
-import { resolve, join } from 'node:path';
 import { randomUUID } from 'node:crypto';
+import { r2FromEnv } from '../scripts/migrate/_shared.mjs';
 
+// Writes to the database in DATABASE_URL and the bucket in R2_BUCKET — point
+// both at staging (twibbon_staging / twibbon-alakhyar-staging), never production.
 const prisma = new PrismaClient();
-const STORAGE_DIR = resolve(process.env.STORAGE_DIR || './storage');
+const { client: r2, bucket } = r2FromEnv();
 
 // A ring/frame twibbon: colored border + banner, fully transparent center so
 // the user's photo shows through (exactly what a real twibbon PNG looks like).
@@ -28,10 +30,11 @@ function frameSvg({ size = 1080, color = '#006195', accent = '#EC2A6B', label = 
 }
 
 async function makeTwibbon(opts) {
-  await mkdir(STORAGE_DIR, { recursive: true });
   const buffer = await sharp(Buffer.from(frameSvg(opts))).png().toBuffer();
   const key = `${randomUUID()}.png`;
-  await writeFile(join(STORAGE_DIR, key), buffer);
+  await r2.send(
+    new PutObjectCommand({ Bucket: bucket, Key: key, Body: buffer, ContentType: 'image/png' })
+  );
   const meta = await sharp(buffer).metadata();
   return { key, width: meta.width, height: meta.height, size: buffer.length };
 }

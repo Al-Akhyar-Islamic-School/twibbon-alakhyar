@@ -1,0 +1,14 @@
+# Twibbon Al Akhyar — Netlify build configuration.
+# Next.js is detected automatically (OpenNext adapter / @netlify/plugin-nextjs).
+# Env vars (DATABASE_URL, R2_*, AUTH_*, CRON_SECRET, …) are set per deploy
+# context in the Netlify UI, not here — see DEPLOY.md.
+
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+[functions]
+  directory = "netlify/functions"

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Button, Input, Badge, Card } from '@/ds';
 import { formatRange, scheduleStatus } from '@/lib/format';
 import type { TwibbonDTO } from '@/lib/twibbon';
+import { MAX_FILE_BYTES, MAX_FILE_LABEL } from '@/lib/limits';
 
 type FormState = {
   id?: string;
@@ -37,6 +38,38 @@ async function errorMessage(res: Response, fallback: string): Promise<string> {
   } catch {
     return fallback;
   }
+}
+
+// Uploads a PNG directly to storage via a presigned URL and returns the
+// pending key the API needs to validate and attach it.
+async function uploadToStorage(file: File): Promise<string> {
+  const signRes = await fetch('/api/uploads/sign', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ size: file.size, contentType: file.type }),
+  });
+  if (!signRes.ok) throw new Error(await errorMessage(signRes, 'Gagal menyiapkan upload.'));
+  const { uploadUrl, pendingKey } = (await signRes.json()) as {
+    uploadUrl: string;
+    pendingKey: string;
+  };
+
+  let put: Response;
+  try {
+    put = await fetch(uploadUrl, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'image/png' },
+      body: file,
+    });
+  } catch {
+    throw new Error(
+      'Gagal mengunggah file ke penyimpanan. Periksa koneksi internet Anda, lalu coba lagi.'
+    );
+  }
+  if (!put.ok) {
+    throw new Error(`Gagal mengunggah file ke penyimpanan (kode ${put.status}). Coba lagi.`);
+  }
+  return pendingKey;
 }
 
 const STATUS: Record<string, { label: string; tone: 'green' | 'amber' | 'neutral' }> = {
@@ -90,6 +123,10 @@ export function DashboardClient({ initialTwibbons }: { initialTwibbons: TwibbonD
       setError('File harus PNG transparan.');
       return;
     }
+    if (file.size > MAX_FILE_BYTES) {
+      setError(`Ukuran file melebihi batas ${MAX_FILE_LABEL}.`);
+      return;
+    }
     setError(null);
     setForm((f) => ({ ...f, file, previewUrl: URL.createObjectURL(file) }));
   };
@@ -98,35 +135,40 @@ export function DashboardClient({ initialTwibbons }: { initialTwibbons: TwibbonD
     setError(null);
     if (!form.title.trim()) return setError('Judul wajib diisi.');
     if (!isEdit && !form.file) return setError('Silakan unggah file PNG twibbon.');
-
-    const fd = new FormData();
-    fd.set('title', form.title.trim());
-    fd.set('description', form.description.trim());
-    fd.set('caption', form.caption.trim());
-    fd.set('startDate', form.startDate);
-    fd.set('endDate', form.endDate);
-    fd.set('isActive', String(form.isActive));
-    if (form.file) fd.set('file', form.file);
+    if (form.file && form.file.size > MAX_FILE_BYTES) {
+      return setError(`Ukuran file melebihi batas ${MAX_FILE_LABEL}.`);
+    }
 
     setSubmitting(true);
     try {
+      // Steps 1–2: send the PNG straight to storage (it never goes through our
+      // function, so the platform's request-size limit doesn't apply).
+      const pendingKey = form.file ? await uploadToStorage(form.file) : undefined;
+
+      // Step 3: save metadata; the server validates the uploaded file.
       const res = await fetch(isEdit ? `/api/twibbons/${form.id}` : '/api/twibbons', {
         method: isEdit ? 'PATCH' : 'POST',
-        body: fd,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: form.title.trim(),
+          description: form.description.trim(),
+          caption: form.caption.trim(),
+          startDate: form.startDate,
+          endDate: form.endDate,
+          isActive: form.isActive,
+          ...(pendingKey ? { pendingKey } : {}),
+        }),
       });
+      if (!res.ok) throw new Error(await errorMessage(res, 'Gagal menyimpan.'));
       const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || 'Gagal menyimpan.');
-        return;
-      }
       const saved: TwibbonDTO = data.twibbon;
       setItems((prev) =>
         isEdit ? prev.map((p) => (p.id === saved.id ? saved : p)) : [saved, ...prev]
       );
       closeForm();
       router.refresh();
-    } catch {
-      setError('Terjadi kesalahan jaringan.');
+    } catch (e) {
+      setError(e instanceof Error && e.message ? e.message : 'Terjadi kesalahan jaringan.');
     } finally {
       setSubmitting(false);
     }
@@ -137,9 +179,11 @@ export function DashboardClient({ initialTwibbons }: { initialTwibbons: TwibbonD
     const next = !t.isActive;
     setItems((prev) => prev.map((p) => (p.id === t.id ? { ...p, isActive: next } : p)));
     try {
-      const fd = new FormData();
-      fd.set('isActive', String(next));
-      const res = await fetch(`/api/twibbons/${t.id}`, { method: 'PATCH', body: fd });
+      const res = await fetch(`/api/twibbons/${t.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: next }),
+      });
       if (!res.ok) throw new Error(await errorMessage(res, 'Gagal mengubah status. Coba lagi.'));
       router.refresh();
     } catch (e) {
@@ -221,7 +265,7 @@ export function DashboardClient({ initialTwibbons }: { initialTwibbons: TwibbonD
                   Ketuk untuk pilih file PNG transparan
                   <br />
                   <span style={{ color: 'var(--text-muted)', fontWeight: 400, fontSize: 12 }}>
-                    Rekomendasi 1080×1080px · maks 5MB
+                    Rekomendasi 1080×1080px · maks {MAX_FILE_LABEL}
                   </span>
                 </span>
               )}

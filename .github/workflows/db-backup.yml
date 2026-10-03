@@ -1,0 +1,58 @@
+# Weekly logical backup of the production TiDB database.
+# TiDB Cloud Starter only keeps automatic backups for 1 day, so this keeps an
+# encrypted dump as a workflow artifact for 90 days. The dump contains staff
+# emails, so it is encrypted with BACKUP_PASSPHRASE before upload.
+#
+# Required repository secrets:
+#   TIDB_HOST, TIDB_USER, TIDB_PASSWORD, TIDB_DATABASE, BACKUP_PASSPHRASE
+#
+# Restore:
+#   gpg --decrypt --batch --passphrase "$BACKUP_PASSPHRASE" twibbon-*.sql.gz.gpg | gunzip > dump.sql
+#   mysql --ssl-mode=VERIFY_IDENTITY -h … -P 4000 -u … -p twibbon_staging < dump.sql
+name: db-backup
+
+on:
+  schedule:
+    - cron: '0 18 * * 0' # Sunday 18:00 UTC = Monday 01:00 WIB
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install MySQL client
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq mysql-client
+
+      - name: Dump and encrypt
+        env:
+          TIDB_HOST: ${{ secrets.TIDB_HOST }}
+          TIDB_USER: ${{ secrets.TIDB_USER }}
+          MYSQL_PWD: ${{ secrets.TIDB_PASSWORD }}
+          TIDB_DATABASE: ${{ secrets.TIDB_DATABASE }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          stamp=$(date -u +%Y%m%dT%H%MZ)
+          mysqldump \
+            --host="$TIDB_HOST" --port=4000 --user="$TIDB_USER" \
+            --ssl-mode=VERIFY_IDENTITY --ssl-ca=/etc/ssl/certs/ca-certificates.crt \
+            --single-transaction --no-tablespaces --skip-lock-tables \
+            --set-gtid-purged=OFF --column-statistics=0 \
+            "$TIDB_DATABASE" \
+            | gzip -9 \
+            | gpg --symmetric --cipher-algo AES256 --batch --yes \
+                  --passphrase "$BACKUP_PASSPHRASE" -o "twibbon-$stamp.sql.gz.gpg"
+          ls -l twibbon-*.gpg
+          # Sanity check: the dump decrypts and contains the expected tables.
+          gpg --decrypt --batch --passphrase "$BACKUP_PASSPHRASE" twibbon-*.gpg 2>/dev/null \
+            | gunzip | grep -c 'CREATE TABLE' | xargs -I{} sh -c 'test {} -ge 3 && echo "{} tables OK"'
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: twibbon-db-backup
+          path: twibbon-*.sql.gz.gpg
+          retention-days: 90
+          if-no-files-found: error

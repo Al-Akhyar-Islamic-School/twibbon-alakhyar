@@ -18,27 +18,31 @@ Design System** agar konsisten dengan ekosistem `*.alakhyar.sch.id` (Dinar dll).
 | Compositing | HTML5 Canvas API native (pan / pinch-zoom / cover clamp), tanpa library berat |
 | Auth | Auth.js (NextAuth v5) — Google OAuth, dibatasi domain `*.alakhyar.sch.id` |
 | API | Next.js Route Handlers |
-| Database | Prisma + **MySQL** |
-| Storage | Driver disk lokal (`src/lib/storage.ts`). Tukar ke GCS/S3 untuk produksi |
+| Hosting | **Netlify** (team sekolah), scheduled function untuk cleanup harian |
+| Database | Prisma + **TiDB Cloud Starter** (kompatibel MySQL) |
+| Storage | **Cloudflare R2** (S3 API) — upload langsung dari browser via presigned URL, disajikan lewat `/file/<key>` + cache CDN |
 | Desain | Al Akhyar Design System (`src/ds/`) |
 
 ## Menjalankan (Local Dev)
 
-Prasyarat: Node 20 LTS + MySQL (buat satu database kosong lebih dulu).
+Prasyarat: Node 22, akses ke DB `twibbon_staging` (TiDB) dan bucket R2
+`twibbon-alakhyar-staging` (CORS mengizinkan `http://localhost:3000`).
+Jangan arahkan dev lokal ke DB/bucket produksi.
 
 ```bash
 npm install
-cp .env.example .env       # isi DATABASE_URL (MySQL) + kredensial Google
-npm run db:push            # buat/selaraskan tabel di MySQL
+cp .env.example .env       # isi DATABASE_URL (staging), R2_* (staging), Google OAuth
+npm run db:push            # buat/selaraskan tabel
 npm run icons              # generate ikon PWA dari logo Alif
-npm run db:seed            # (opsional) 3 twibbon contoh
+npm run db:seed            # (opsional) 3 twibbon contoh ke DB + bucket staging
 npm run dev                # http://localhost:3000
 ```
 
-Untuk deploy ke VPS (CloudPanel + MySQL), lihat **[DEPLOY.md](DEPLOY.md)**.
+Deploy (Netlify + TiDB + R2), runbook migrasi dari VPS, dan rollback:
+lihat **[DEPLOY.md](DEPLOY.md)**.
 
-Alur **guest** (pilih twibbon → pasang foto → unduh) langsung jalan tanpa
-konfigurasi apa pun. **Login & upload** butuh Google OAuth (lihat di bawah).
+Alur **guest** (pilih twibbon → pasang foto → unduh) cukup butuh DB dan R2.
+**Login & upload** juga butuh Google OAuth (lihat di bawah).
 
 ## Konfigurasi Google OAuth
 
@@ -71,13 +75,16 @@ src/
     dashboard/page.tsx          Dashboard staff (auth-gated)
     api/twibbons/               CRUD + scope=public|mine, download log
     api/auth/[...nextauth]/     Handler Auth.js
-    file/[key]/route.ts         Penyajian PNG twibbon (cache immutable)
+    api/uploads/sign/           Presigned URL upload langsung ke R2
+    api/cron/cleanup/           Hapus file twibbon kedaluwarsa (dipanggil cron)
+    file/[key]/route.ts         Penyajian PNG dari R2 (stream + cache CDN immutable)
   components/
     TwibbonEditor.tsx           Mesin compositing canvas (inti aplikasi)
     DashboardClient.tsx         Upload / edit / toggle / hapus
     SiteHeader.tsx, TwibbonCard.tsx, ServiceWorkerRegister.tsx
   lib/
-    auth.ts domain.ts db.ts storage.ts validateTwibbon.ts twibbon.ts format.ts
+    auth.ts domain.ts db.ts storage.ts (R2) uploads.ts cdn.ts limits.ts
+    validateTwibbon.ts twibbon.ts format.ts freeze.ts
   ds/                           Al Akhyar Design System (token + komponen)
 prisma/schema.prisma            Model User, Twibbon, DownloadLog
 public/                         manifest, sw.js, ikon, aset brand
@@ -96,7 +103,7 @@ public/                         manifest, sw.js, ikon, aset brand
 | FR-07 kanvas = dimensi asli PNG | `canvas width/height = twibbon.width/height` |
 | FR-08 unduh PNG resolusi asli | `renderFinalBlob` → `toBlob('image/png')` |
 | FR-09 login domain `*.alakhyar.sch.id` | `lib/domain.ts` + `signIn` callback |
-| FR-10/11 upload PNG + validasi transparansi | `api/twibbons` POST + `validateTwibbon.ts` (sniff magic byte + alpha) |
+| FR-10/11 upload PNG + validasi transparansi | `api/uploads/sign` → PUT ke R2 → `api/twibbons` POST + `lib/uploads.ts` / `validateTwibbon.ts` (sniff magic byte + alpha) |
 | FR-12 toggle aktif/nonaktif | Dashboard toggle → PATCH |
 | FR-13 edit/hapus (soft delete) | PATCH / DELETE `api/twibbons/[id]` |
 | FR-14 Web Share API | tombol Bagikan (`navigator.share`) |
@@ -106,10 +113,10 @@ public/                         manifest, sw.js, ikon, aset brand
 
 ## Menuju Produksi (checklist)
 
-- [ ] Buat database MySQL + user (CloudPanel), isi `DATABASE_URL`, jalankan `npm run db:push`.
-- [ ] (Opsional) Ganti storage driver di `src/lib/storage.ts` ke Google Cloud Storage / S3 (CDN) bila trafik event sangat besar.
-- [ ] Set semua env (`AUTH_SECRET`, kredensial Google, `NEXT_PUBLIC_SITE_URL`).
-- [ ] `npm run build && npm start` (service worker hanya aktif di produksi).
+- [ ] Setup R2 (bucket, CORS, lifecycle, token bucket-scoped), TiDB, dan Netlify sesuai [DEPLOY.md](DEPLOY.md) §1.
+- [ ] Set env per deploy context di Netlify; aktifkan auto-recharge + usage alert.
+- [ ] Jalankan workflow `db-backup` sekali dan uji restore.
+- [ ] Migrasi data dari VPS dengan skrip `migrate:*` (DEPLOY.md §3).
 - [ ] Keputusan bisnis terbuka (PRD §12): role upload (Opsi A/B), moderasi,
       orientasi non-persegi. Kolom `role` sudah tersedia untuk Opsi B.
 
@@ -121,4 +128,10 @@ public/                         manifest, sw.js, ikon, aset brand
   di-clamp sehingga kanvas tidak pernah berlubang (`clampTransform`).
 - **Output = resolusi asli twibbon**: backing store canvas = dimensi asli PNG,
   hanya diperkecil via CSS untuk tampilan.
-- **Soft delete**: twibbon tidak dihapus permanen agar tautan/OG lama tidak rusak.
+- **Soft delete**: baris twibbon tidak dihapus permanen (statistik unduhan tetap
+  utuh); file PNG-nya langsung dihapus dari R2 agar storage tidak menumpuk.
+- **Upload tidak lewat function**: browser mengunggah langsung ke R2 dengan
+  presigned URL, lalu server memvalidasi dan memindahkan file. Batas body
+  serverless (~4,5 MB) tidak berlaku, jadi batas 5 MB tetap bisa dipakai.
+- **File tetap same-origin** (`/file/<key>`): URL lama dan preview OG tidak berubah,
+  dan canvas editor tidak butuh CORS.
