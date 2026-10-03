@@ -52,19 +52,23 @@ Tidak ada lingkungan staging. Semua resource di bawah adalah **produksi**. Sebel
 
    Karena tidak ada staging, preview akan memakai DB dan bucket produksi. Jadi harus mati.
 4. **Team Owner**: aktifkan **auto-recharge** dan **usage alert**. Kalau credit habis, *semua* situs di team di-pause.
-5. Environment variables (context Production, tandai sebagai secret):
+5. Environment variables (context Production). Centang **"Contains secret values"** hanya untuk variabel yang memang rahasia.
 
-| Variabel | Nilai |
-|---|---|
-| `DATABASE_URL` | URL TiDB `twibbon` (1.2) |
-| `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` | token bucket-scoped (1.1) |
-| `R2_BUCKET` | `twibbon-alakhyar` |
-| `AUTH_SECRET` | **sama dengan `.env` VPS** selama migrasi |
-| `AUTH_TRUST_HOST` | `true` |
-| `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | sama dengan VPS |
-| `ALLOWED_EMAIL_DOMAIN` | `alakhyar.sch.id` |
-| `NEXT_PUBLIC_SITE_URL` | `https://twibbon.alakhyar.sch.id` |
-| `CRON_SECRET` | `openssl rand -hex 32` |
+   Variabel non-rahasia **tidak boleh** dicentang. Nilainya muncul di kode, dokumentasi, atau bundle browser, sehingga *secrets scanning* Netlify akan menggagalkan build. `NEXT_PUBLIC_*` khususnya selalu disisipkan ke JavaScript browser.
+
+| Variabel | Nilai | Secret? |
+|---|---|---|
+| `DATABASE_URL` | URL TiDB `twibbon` (1.2) | **Ya** |
+| `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` | token bucket-scoped (1.1) | **Ya** |
+| `R2_ACCOUNT_ID` | Account ID Cloudflare | boleh |
+| `R2_BUCKET` | `twibbon-alakhyar` | **Tidak** |
+| `AUTH_SECRET` | **sama dengan `.env` VPS** selama migrasi | **Ya** |
+| `AUTH_TRUST_HOST` | `true` | **Tidak** |
+| `AUTH_GOOGLE_ID` | sama dengan VPS | boleh |
+| `AUTH_GOOGLE_SECRET` | sama dengan VPS | **Ya** |
+| `ALLOWED_EMAIL_DOMAIN` | `alakhyar.sch.id` | **Tidak** |
+| `NEXT_PUBLIC_SITE_URL` | `https://twibbon.alakhyar.sch.id` | **Tidak** |
+| `CRON_SECRET` | **hasil** perintah `openssl rand -hex 32` (64 karakter hex), bukan teks perintahnya | **Ya** |
 
 `AUTH_URL` **tidak di-set**. `trustHost: true` di `src/lib/auth.ts` membuat Auth.js memakai host dari header Netlify, jadi build yang sama berjalan di `<site>.netlify.app` dan di domain custom.
 
