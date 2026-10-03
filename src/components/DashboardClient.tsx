@@ -29,6 +29,16 @@ const emptyForm: FormState = {
   previewUrl: null,
 };
 
+// Prefer the API's own error message (e.g. maintenance freeze) over a generic one.
+async function errorMessage(res: Response, fallback: string): Promise<string> {
+  try {
+    const data = await res.json();
+    return typeof data?.error === 'string' && data.error ? data.error : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 const STATUS: Record<string, { label: string; tone: 'green' | 'amber' | 'neutral' }> = {
   active: { label: 'Aktif', tone: 'green' },
   upcoming: { label: 'Segera', tone: 'amber' },
@@ -130,11 +140,12 @@ export function DashboardClient({ initialTwibbons }: { initialTwibbons: TwibbonD
       const fd = new FormData();
       fd.set('isActive', String(next));
       const res = await fetch(`/api/twibbons/${t.id}`, { method: 'PATCH', body: fd });
-      if (!res.ok) throw new Error();
+      if (!res.ok) throw new Error(await errorMessage(res, 'Gagal mengubah status. Coba lagi.'));
       router.refresh();
-    } catch {
+    } catch (e) {
       // revert on failure
       setItems((prev) => prev.map((p) => (p.id === t.id ? { ...p, isActive: t.isActive } : p)));
+      alert(e instanceof Error && e.message ? e.message : 'Gagal mengubah status. Coba lagi.');
     } finally {
       setBusyId(null);
     }
@@ -145,11 +156,11 @@ export function DashboardClient({ initialTwibbons }: { initialTwibbons: TwibbonD
     setBusyId(t.id);
     try {
       const res = await fetch(`/api/twibbons/${t.id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error();
+      if (!res.ok) throw new Error(await errorMessage(res, 'Gagal menghapus. Coba lagi.'));
       setItems((prev) => prev.filter((p) => p.id !== t.id));
       router.refresh();
-    } catch {
-      alert('Gagal menghapus. Coba lagi.');
+    } catch (e) {
+      alert(e instanceof Error && e.message ? e.message : 'Gagal menghapus. Coba lagi.');
     } finally {
       setBusyId(null);
     }

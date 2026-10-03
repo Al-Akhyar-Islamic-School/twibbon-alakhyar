@@ -4,6 +4,7 @@ import { auth } from '@/lib/auth';
 import { validateTwibbonBuffer } from '@/lib/validateTwibbon';
 import { putPng, deleteFile } from '@/lib/storage';
 import { serializeTwibbon } from '@/lib/twibbon';
+import { uploadsFrozen, frozenResponse } from '@/lib/freeze';
 
 // GET /api/twibbons/[id] — public read of a single (non-deleted) twibbon.
 export async function GET(
@@ -29,6 +30,7 @@ export async function PATCH(
   const session = await auth();
   const uid = (session?.user as { id?: string } | undefined)?.id;
   if (!uid) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (uploadsFrozen()) return frozenResponse();
 
   const existing = await ownedOr404(params.id, uid);
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -91,6 +93,7 @@ export async function DELETE(
   const session = await auth();
   const uid = (session?.user as { id?: string } | undefined)?.id;
   if (!uid) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (uploadsFrozen()) return frozenResponse();
 
   const existing = await ownedOr404(params.id, uid);
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });

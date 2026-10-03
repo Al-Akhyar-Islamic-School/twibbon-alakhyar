@@ -4,6 +4,7 @@ import { auth } from '@/lib/auth';
 import { validateTwibbonBuffer } from '@/lib/validateTwibbon';
 import { putPng } from '@/lib/storage';
 import { isPubliclyVisible, serializeTwibbon } from '@/lib/twibbon';
+import { uploadsFrozen, frozenResponse } from '@/lib/freeze';
 
 // GET /api/twibbons
 //   ?scope=public (default) → only publicly-visible twibbons (FR-01)
@@ -49,6 +50,7 @@ export async function POST(req: NextRequest) {
   const session = await auth();
   const uid = (session?.user as { id?: string } | undefined)?.id;
   if (!uid) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (uploadsFrozen()) return frozenResponse();
 
   const form = await req.formData();
   const file = form.get('file');
