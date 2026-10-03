@@ -6,8 +6,9 @@ import sharp from 'sharp';
 import { randomUUID } from 'node:crypto';
 import { r2FromEnv } from '../scripts/migrate/_shared.mjs';
 
-// Writes to the database in DATABASE_URL and the bucket in R2_BUCKET — point
-// both at staging (twibbon_staging / twibbon-alakhyar-staging), never production.
+// Writes to the database in DATABASE_URL and the bucket in R2_BUCKET. Local
+// development only (local MySQL + an S3 emulator via R2_ENDPOINT) — never run
+// it against the production TiDB database or R2 bucket.
 const prisma = new PrismaClient();
 const { client: r2, bucket } = r2FromEnv();
 

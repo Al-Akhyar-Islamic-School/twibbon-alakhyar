@@ -13,79 +13,78 @@ Alur upload: browser → `POST /api/uploads/sign` → `PUT` langsung ke R2 (`pen
 
 ---
 
-## 1. Setup sekali
+## 1. Setup sekali (Fase 0)
+
+Tidak ada lingkungan staging. Semua resource di bawah adalah **produksi**. Sebelum DNS dipindah, aplikasi diuji di `https://<site>.netlify.app` (lihat §3.3).
 
 ### 1.1 Cloudflare R2 (akun yang sama dengan Dinar eRapor)
-1. Buat bucket **`twibbon-alakhyar`** dan **`twibbon-alakhyar-staging`** (location hint: *Eastern North America*).
-2. **CORS** untuk masing-masing bucket (Settings → CORS policy):
+1. Buat bucket **`twibbon-alakhyar`** (location hint: *Eastern North America*).
+2. **CORS** (Settings → CORS policy):
    ```json
    [
      {
-       "AllowedOrigins": [
-         "https://twibbon.alakhyar.sch.id",
-         "https://<site>.netlify.app",
-         "https://staging--<site>.netlify.app"
-       ],
+       "AllowedOrigins": ["https://twibbon.alakhyar.sch.id", "https://<site>.netlify.app"],
        "AllowedMethods": ["PUT"],
        "AllowedHeaders": ["content-type"],
        "MaxAgeSeconds": 3600
      }
    ]
    ```
-   Di bucket staging, tambahkan `"http://localhost:3000"` untuk dev lokal.
-3. **Object lifecycle** (masing-masing bucket): hapus objek dengan prefix `pending/` setelah **1 hari**.
-4. **API token**: R2 → *Manage API tokens* → *Object Read & Write*, **dibatasi ke dua bucket twibbon saja**. Jangan pakai token eRapor atau token akun-wide. Catat Account ID, Access Key ID, dan Secret.
-5. Uji isolasi: token ini **harus ditolak** saat mengakses bucket eRapor.
+   `<site>` diketahui setelah langkah 1.3. Isi bagian itu sesudahnya.
+3. **Object lifecycle**: hapus objek dengan prefix `pending/` setelah **1 hari**.
+4. **API token**: R2 → *Manage API tokens* → *Object Read & Write*, **hanya untuk bucket `twibbon-alakhyar`**. Jangan pakai token eRapor atau token akun-wide. Catat Account ID, Access Key ID, dan Secret Access Key.
 
 ### 1.2 TiDB Cloud Starter
 1. Buat instance di **AWS us-east-1**.
-2. Buat database `twibbon` (produksi) dan `twibbon_staging`.
-3. *Connect* → Prisma → salin URL: `mysql://<prefix>.root:<pass>@gateway01.us-east-1.prod.aws.tidbcloud.com:4000/<db>?sslaccept=strict`. Tambahkan `&connection_limit=3`.
-4. Buat skema dari laptop:
+2. Buat database `twibbon`.
+3. *Connect* → pilih Prisma → salin URL: `mysql://<prefix>.root:<pass>@gateway01.us-east-1.prod.aws.tidbcloud.com:4000/twibbon?sslaccept=strict`. Tambahkan `&connection_limit=3`.
+4. Buat tabel dari laptop (di branch `migrate/netlify`):
    ```bash
-   DATABASE_URL='<url twibbon_staging>' npx prisma db push
-   DATABASE_URL='<url twibbon>' npx prisma db push
+   DATABASE_URL='<url TiDB twibbon>' npx prisma db push
    ```
 
 ### 1.3 Netlify
-1. *Add new project* → impor repo `Al-Akhyar-Islamic-School/twibbon-alakhyar` ke team sekolah. Build settings dibaca dari `netlify.toml`.
-2. *Branches and deploy contexts*: production branch `main`, aktifkan **branch deploy untuk `staging`**.
-3. **Team Owner**: aktifkan **auto-recharge** dan **usage alert**. Kalau credit habis, *semua* situs di team di-pause.
-4. Environment variables (scope Builds + Functions, tandai sebagai secret):
+1. *Add new project* → *Import an existing project* → GitHub → `Al-Akhyar-Islamic-School/twibbon-alakhyar`, di team sekolah.
+2. **Branch to deploy: `migrate/netlify`** selama persiapan. Setelah branch ini di-merge, kembalikan ke `main` (§3.3).
+3. *Project configuration → Build & deploy → Branches and deploy contexts*:
+   - **Deploy Previews: Off** (*Don't deploy pull requests*).
+   - **Branch deploys: Deploy only the production branch**.
 
-| Variabel | Production | Branch deploy / Deploy Preview |
-|---|---|---|
-| `DATABASE_URL` | TiDB `twibbon` | TiDB `twibbon_staging` |
-| `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` | token bucket-scoped | sama |
-| `R2_BUCKET` | `twibbon-alakhyar` | `twibbon-alakhyar-staging` |
-| `AUTH_SECRET` | **sama dengan VPS** selama migrasi | acak sendiri |
-| `AUTH_TRUST_HOST` | `true` | `true` |
-| `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | OAuth client yang sama | sama |
-| `ALLOWED_EMAIL_DOMAIN` | `alakhyar.sch.id` | sama |
-| `NEXT_PUBLIC_SITE_URL` | `https://twibbon.alakhyar.sch.id` | `https://staging--<site>.netlify.app` |
-| `CRON_SECRET` | `openssl rand -hex 32` | nilai lain |
+   Karena tidak ada staging, preview akan memakai DB dan bucket produksi. Jadi harus mati.
+4. **Team Owner**: aktifkan **auto-recharge** dan **usage alert**. Kalau credit habis, *semua* situs di team di-pause.
+5. Environment variables (context Production, tandai sebagai secret):
+
+| Variabel | Nilai |
+|---|---|
+| `DATABASE_URL` | URL TiDB `twibbon` (1.2) |
+| `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` | token bucket-scoped (1.1) |
+| `R2_BUCKET` | `twibbon-alakhyar` |
+| `AUTH_SECRET` | **sama dengan `.env` VPS** selama migrasi |
+| `AUTH_TRUST_HOST` | `true` |
+| `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | sama dengan VPS |
+| `ALLOWED_EMAIL_DOMAIN` | `alakhyar.sch.id` |
+| `NEXT_PUBLIC_SITE_URL` | `https://twibbon.alakhyar.sch.id` |
+| `CRON_SECRET` | `openssl rand -hex 32` |
 
 `AUTH_URL` **tidak di-set**. `trustHost: true` di `src/lib/auth.ts` membuat Auth.js memakai host dari header Netlify, jadi build yang sama berjalan di `<site>.netlify.app` dan di domain custom.
+
+6. *Deploys → Trigger deploy* (tanpa cache) setelah env diisi, karena env hanya berlaku untuk deploy berikutnya.
 
 ### 1.4 Google Cloud Console (OAuth client twibbon)
 Authorized redirect URI:
 - `https://twibbon.alakhyar.sch.id/api/auth/callback/google` (sudah ada, tidak berubah)
-- `https://<site>.netlify.app/api/auth/callback/google` (sementara, untuk uji sebelum cutover)
-- `https://staging--<site>.netlify.app/api/auth/callback/google`
-
-URL Deploy Preview acak dan Google tidak menerima wildcard, jadi login hanya bisa diuji di branch `staging`.
+- `https://<site>.netlify.app/api/auth/callback/google` (**sementara**, untuk uji sebelum cutover; hapus setelah dekomisi)
 
 ### 1.5 GitHub Actions secrets (untuk `db-backup`)
-`TIDB_HOST`, `TIDB_USER`, `TIDB_PASSWORD`, `TIDB_DATABASE` (= `twibbon`), `BACKUP_PASSPHRASE` (simpan juga di pengelola password sekolah; tanpa passphrase ini backup tidak bisa dibuka).
+`TIDB_HOST`, `TIDB_USER`, `TIDB_PASSWORD`, `TIDB_DATABASE` (= `twibbon`), dan `BACKUP_PASSPHRASE`. Simpan passphrase juga di pengelola password sekolah; tanpa passphrase ini backup tidak bisa dibuka.
 
-Setelah itu jalankan workflow sekali secara manual (*Actions → db-backup → Run workflow*), lalu **uji restore** ke `twibbon_staging`.
+Workflow ada di branch `migrate/netlify`, jadi baru bisa dijalankan setelah branch itu di-merge ke `main`. Setelah itu jalankan sekali secara manual (*Actions → db-backup → Run workflow*), lalu **uji restore** ke database sementara (langkahnya ada di komentar workflow, termasuk menghapus database uji).
 
 ---
 
-## 2. Deploy sehari-hari
+## 2. Deploy sehari-hari (setelah cutover)
 - `git push` ke `main` → production deploy otomatis (15 credit per deploy).
-- `git push` ke `staging` → branch deploy gratis memakai DB dan bucket staging.
-- Perubahan skema: jalankan `DATABASE_URL=… npx prisma db push` ke staging dulu, baru ke produksi, **sebelum** merge.
+- Perubahan skema: jalankan `DATABASE_URL=… npx prisma db push` ke TiDB **sebelum** merge. Hanya untuk perubahan aditif (kolom/tabel baru); untuk yang destruktif, backup dulu.
 
 ---
 
@@ -93,11 +92,16 @@ Setelah itu jalankan workflow sekali secara manual (*Actions → db-backup → R
 
 > Semua perintah di VPS dijalankan sebagai user **`alakhyar-twibbon`**, bukan root (`su - alakhyar-twibbon`).
 
-### 3.1 Persiapan
-- Branch `feat/freeze-flag` sudah di-merge dan di-deploy di VPS. Tag commit itu dengan `git tag vps-final && git push origin vps-final`. **Setelah itu VPS tidak di-`git pull` lagi.**
-- Pre-check di VPS:
+### 3.1 Persiapan VPS
+- Merge `feat/freeze-flag` ke `main`, lalu deploy di VPS:
   ```bash
   cd ~/htdocs/twibbon.alakhyar.sch.id
+  git pull origin main
+  npm run deploy:update
+  ```
+- Tag commit tersebut: `git tag vps-final && git push origin vps-final`. **Setelah `migrate/netlify` di-merge ke `main`, VPS tidak boleh di-`git pull` lagi**, karena kode baru butuh kredensial R2 yang tidak ada di VPS.
+- Pre-check di VPS:
+  ```bash
   mysql -u twibbon-user -p twibbon-alakhyar -e "SELECT 'User',COUNT(*) FROM User UNION ALL SELECT 'Twibbon',COUNT(*) FROM Twibbon UNION ALL SELECT 'DownloadLog',COUNT(*) FROM DownloadLog"
   ls -lS storage | head
   (cd storage && sha256sum *.png) > ~/twibbon-files.sha256
@@ -105,7 +109,7 @@ Setelah itu jalankan workflow sekali secara manual (*Actions → db-backup → R
 
 ### 3.2 Salin data (rehearsal, lalu diulang saat sinkronisasi akhir)
 ```bash
-# di VPS: dump DATA SAJA (skema dibuat Prisma di TiDB)
+# di VPS: dump DATA SAJA (tabel sudah dibuat Prisma di TiDB)
 mysqldump -u twibbon-user -p --no-create-info --complete-insert --single-transaction \
   --no-tablespaces --skip-triggers twibbon-alakhyar User Twibbon DownloadLog > ~/twibbon-data.sql
 
@@ -121,7 +125,7 @@ R2_ACCOUNT_ID=… R2_ACCESS_KEY_ID=… R2_SECRET_ACCESS_KEY=… R2_BUCKET=twibbo
   npm run migrate:upload-r2 -- ./vps-storage ./twibbon-files.sha256
 ```
 
-### 3.3 Verifikasi (wajib PASS)
+Verifikasi (wajib PASS):
 ```bash
 ssh -N -L 3307:127.0.0.1:3306 alakhyar-twibbon@<vps> &   # tunnel ke MySQL VPS
 
@@ -131,8 +135,26 @@ DST_DATABASE_URL='<url TiDB twibbon>' npm run migrate:verify-db
 DATABASE_URL='<url TiDB twibbon>' R2_…=… R2_BUCKET=twibbon-alakhyar \
   npm run migrate:verify-r2 -- ./twibbon-files.sha256
 ```
-- `verify-db` membandingkan jumlah baris dan SHA-256 seluruh baris per tabel, lalu mengecek email yang duplikat karena beda kapitalisasi.
+- `verify-db` membandingkan jumlah baris dan SHA-256 seluruh baris per tabel, lalu mengecek email duplikat karena beda kapitalisasi.
 - `verify-r2` memastikan setiap `imageKey` di DB ada di bucket dan isinya cocok dengan checksum VPS.
+
+### 3.3 Uji di `<site>.netlify.app` (pengganti staging)
+Setelah 3.2, `<site>.netlify.app` berjalan dengan data produksi hasil rehearsal. Uji:
+- Home menampilkan twibbon aktif dengan hitungan pakai yang benar.
+- Link `/file/<key>` lama terbuka, termasuk file terbesar.
+- Editor: pasang foto lalu unduh PNG. Canvas tidak boleh error.
+- Login staf.
+- Upload twibbon **uji** ±4,9 MB. File >5 MB atau PNG tanpa transparansi harus ditolak dengan pesan jelas.
+- Edit dengan ganti file, lalu hapus twibbon uji.
+- `curl -I https://<site>.netlify.app/file/<key>` dua kali → request kedua `cache-status` *hit*.
+- Netlify → *Functions* → `cleanup-cron` → **Run now**, lalu cek lognya.
+
+Data uji di DB akan hilang saat sinkronisasi akhir (tabel di-truncate). File ujinya dibersihkan dengan `--prune` di 3.4.
+
+Kalau semua lolos:
+1. Merge `migrate/netlify` → `main`.
+2. Ubah *Branch to deploy* di Netlify kembali ke **`main`**.
+3. Jangan `git pull` di VPS.
 
 ### 3.4 Cutover
 1. **H-3 sampai H-7**: di Hostinger, ubah TTL record `twibbon` (A, dan AAAA kalau ada) ke **300**. Cek apakah ada record CAA yang memblokir Let's Encrypt.
@@ -141,7 +163,15 @@ DATABASE_URL='<url TiDB twibbon>' R2_…=… R2_BUCKET=twibbon-alakhyar \
    # di VPS: tambahkan UPLOADS_FROZEN=1 ke .env
    pm2 restart twibbon-alakhyar --update-env
    ```
-3. **Sinkronisasi akhir**: di TiDB jalankan `TRUNCATE TABLE DownloadLog; TRUNCATE TABLE Twibbon; TRUNCATE TABLE User;` (dengan `SET FOREIGN_KEY_CHECKS=0`). Ulangi 3.2 dan 3.3, lalu **catat waktu dump** sebagai `T_dump`.
+3. **Sinkronisasi akhir**:
+   - Di TiDB jalankan `SET FOREIGN_KEY_CHECKS=0; TRUNCATE TABLE DownloadLog; TRUNCATE TABLE Twibbon; TRUNCATE TABLE User;`. Ini sekaligus membuang data uji dari 3.3.
+   - Ulangi langkah salin dan verifikasi di 3.2. **Catat waktu dump** sebagai `T_dump`.
+   - Bersihkan file uji di bucket:
+     ```bash
+     DATABASE_URL='<url TiDB twibbon>' R2_…=… R2_BUCKET=twibbon-alakhyar \
+       npm run migrate:verify-r2 -- ./twibbon-files.sha256 --prune
+     ```
+     Prune hanya berjalan kalau semua file di DB ada dan cocok.
 4. Netlify → *Domain management* → tambah `twibbon.alakhyar.sch.id`.
 5. Hostinger: **hapus A/AAAA `twibbon`**, lalu buat **CNAME `twibbon` → `<site>.netlify.app`**. Tunggu sertifikat HTTPS terbit (beberapa menit). Selama propagasi, VPS yang read-only tetap melayani guest.
 6. Salin log unduhan yang masuk ke VPS setelah dump (ulangi H+2):
@@ -176,7 +206,7 @@ DATABASE_URL='<url TiDB twibbon>' R2_…=… R2_BUCKET=twibbon-alakhyar \
 - ≥14 hari stabil tanpa rollback, dan delta log terakhir sudah disalin.
 - Access log nginx untuk `twibbon.alakhyar.sch.id` tidak menunjukkan trafik selama ≥7 hari.
 - Backup final diarsipkan di luar VPS (`clpctl db:export --databaseName=twibbon-alakhyar`, `tar` folder `storage/`, `.env`).
-- `db-backup` sudah sukses dan restore-nya sudah diuji.
+- `db-backup` sudah sukses dan restore-nya sudah diuji ke database sementara.
 - Cleanup terjadwal sudah sukses minimal sekali.
 
 **Langkah:**
@@ -189,7 +219,7 @@ DATABASE_URL='<url TiDB twibbon>' R2_…=… R2_BUCKET=twibbon-alakhyar \
 ---
 
 ## 4. Operasional
-- **Cleanup manual**: `CRON_SECRET=… npm run cleanup` (production). Untuk staging: `CLEANUP_URL=https://staging--<site>.netlify.app CRON_SECRET=… npm run cleanup`. Jadwal otomatis bisa dicek di Netlify → *Functions* → `cleanup-cron` (*Run now* untuk uji).
+- **Cleanup manual**: `CRON_SECRET=… npm run cleanup`. Sebelum cutover: `CLEANUP_URL=https://<site>.netlify.app CRON_SECRET=… npm run cleanup`. Jadwal otomatis bisa dicek di Netlify → *Functions* → `cleanup-cron` (*Run now* untuk uji).
 - **Mode pemeliharaan**: `UPLOADS_FROZEN=1` menolak upload, edit, dan hapus dengan 503. Fitur lain tetap jalan.
 - **Restore backup**: lihat komentar di `.github/workflows/db-backup.yml`.
 - **Cache file**: `/file/<key>` di-cache setahun dan bertahan lintas deploy. Saat twibbon dihapus atau filenya diganti, cache file itu di-purge otomatis lewat tag `file-<uuid>`. Kalau log function menampilkan `cache purge API token was not found`, buat Personal Access Token Netlify lalu set sebagai env `NETLIFY_PURGE_TOKEN`.

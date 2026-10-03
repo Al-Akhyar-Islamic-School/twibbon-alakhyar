@@ -6,9 +6,11 @@
 # Required repository secrets:
 #   TIDB_HOST, TIDB_USER, TIDB_PASSWORD, TIDB_DATABASE, BACKUP_PASSPHRASE
 #
-# Restore:
+# Restore test (into a throwaway database, then drop it):
 #   gpg --decrypt --batch --passphrase "$BACKUP_PASSPHRASE" twibbon-*.sql.gz.gpg | gunzip > dump.sql
-#   mysql --ssl-mode=VERIFY_IDENTITY -h … -P 4000 -u … -p twibbon_staging < dump.sql
+#   mysql --ssl-mode=VERIFY_IDENTITY -h … -P 4000 -u … -p -e 'CREATE DATABASE twibbon_restore_test'
+#   mysql --ssl-mode=VERIFY_IDENTITY -h … -P 4000 -u … -p twibbon_restore_test < dump.sql
+#   mysql … -e 'SELECT COUNT(*) FROM twibbon_restore_test.Twibbon; DROP DATABASE twibbon_restore_test'
 name: db-backup
 
 on:

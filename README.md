@@ -25,16 +25,16 @@ Design System** agar konsisten dengan ekosistem `*.alakhyar.sch.id` (Dinar dll).
 
 ## Menjalankan (Local Dev)
 
-Prasyarat: Node 22, akses ke DB `twibbon_staging` (TiDB) dan bucket R2
-`twibbon-alakhyar-staging` (CORS mengizinkan `http://localhost:3000`).
-Jangan arahkan dev lokal ke DB/bucket produksi.
+Tidak ada lingkungan staging. Dev lokal bersifat opsional dan **tidak boleh**
+memakai DB/bucket produksi. Pakai MySQL lokal dan emulator S3 (mis. MinIO),
+yang ditunjuk lewat `R2_ENDPOINT`.
 
 ```bash
 npm install
-cp .env.example .env       # isi DATABASE_URL (staging), R2_* (staging), Google OAuth
+cp .env.example .env       # DATABASE_URL MySQL lokal, R2_* + R2_ENDPOINT emulator, Google OAuth
 npm run db:push            # buat/selaraskan tabel
 npm run icons              # generate ikon PWA dari logo Alif
-npm run db:seed            # (opsional) 3 twibbon contoh ke DB + bucket staging
+npm run db:seed            # (opsional) 3 twibbon contoh
 npm run dev                # http://localhost:3000
 ```
 

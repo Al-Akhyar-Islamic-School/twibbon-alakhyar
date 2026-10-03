@@ -1,10 +1,12 @@
 // Verifies storage against the database: every non-empty Twibbon.imageKey must
 // exist in R2, and (when a manifest is given) its bytes must match the VPS
-// checksum. Unreferenced objects at the bucket root are reported as warnings.
+// checksum. Unreferenced objects at the bucket root are reported as warnings;
+// add --prune to delete them (e.g. test uploads made on <site>.netlify.app
+// before cutover — their rows disappear when the final sync truncates tables).
 //
 //   DATABASE_URL='mysql://…tidb…/twibbon?sslaccept=strict' R2_…=… \
-//   npm run migrate:verify-r2 -- ./twibbon-files.sha256
-import { GetObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
+//   npm run migrate:verify-r2 -- ./twibbon-files.sha256 [--prune]
+import { DeleteObjectCommand, GetObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
 import {
   isNotFound,
   prismaFor,
@@ -16,7 +18,9 @@ import {
 } from './_shared.mjs';
 
 const [dbUrl] = requireEnv('DATABASE_URL');
-const manifestPath = process.argv[2];
+const args = process.argv.slice(2);
+const prune = args.includes('--prune');
+const manifestPath = args.find((a) => !a.startsWith('--'));
 const { client, bucket } = r2FromEnv();
 const manifest = await readManifest(manifestPath);
 const db = prismaFor(dbUrl);
@@ -57,7 +61,20 @@ try {
     for (const o of page.Contents ?? []) if (!referenced.has(o.Key)) orphans.push(o.Key);
     token = page.IsTruncated ? page.NextContinuationToken : undefined;
   } while (token);
-  if (orphans.length) console.log(`Peringatan: ${orphans.length} objek tidak direferensikan DB:`, orphans);
+  // Safety: never prune when the DB looks wrong (no references at all, e.g. a
+  // DATABASE_URL pointing at an empty database) or when files are missing.
+  const pruneAllowed = prune && rows.length > 0 && ok;
+  if (prune && !pruneAllowed) {
+    console.log('Prune DIBATALKAN: DB tidak mereferensikan file apa pun atau ada file hilang/berbeda.');
+  }
+  if (orphans.length && pruneAllowed) {
+    for (const key of orphans) {
+      await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
+    }
+    console.log(`Dihapus ${orphans.length} objek yang tidak direferensikan DB:`, orphans);
+  } else if (orphans.length) {
+    console.log(`Peringatan: ${orphans.length} objek tidak direferensikan DB (pakai --prune untuk menghapus):`, orphans);
+  }
 
   console.log(`\n${rows.length} imageKey diperiksa di ${bucket}.`);
 } finally {
