@@ -63,6 +63,7 @@ Tidak ada lingkungan staging. Semua resource di bawah adalah **produksi**. Sebel
 | `R2_ACCOUNT_ID` | Account ID Cloudflare | boleh |
 | `R2_BUCKET` | `twibbon-alakhyar` | **Tidak** |
 | `AUTH_SECRET` | **sama dengan `.env` VPS** selama migrasi | **Ya** |
+| `AUTH_URL` | **sebelum cutover**: `https://twibbon-alakhyar.netlify.app`; **saat cutover** diganti `https://twibbon.alakhyar.sch.id` (§3.4) | **Tidak** |
 | `AUTH_TRUST_HOST` | `true` | **Tidak** |
 | `AUTH_GOOGLE_ID` | sama dengan VPS | boleh |
 | `AUTH_GOOGLE_SECRET` | sama dengan VPS | **Ya** |
@@ -70,7 +71,7 @@ Tidak ada lingkungan staging. Semua resource di bawah adalah **produksi**. Sebel
 | `NEXT_PUBLIC_SITE_URL` | `https://twibbon.alakhyar.sch.id` | **Tidak** |
 | `CRON_SECRET` | **hasil** perintah `openssl rand -hex 32` (64 karakter hex), bukan teks perintahnya | **Ya** |
 
-`AUTH_URL` **tidak di-set**. `trustHost: true` di `src/lib/auth.ts` membuat Auth.js memakai host dari header Netlify, jadi build yang sama berjalan di `<site>.netlify.app` dan di domain custom.
+`AUTH_URL` **wajib di-set**. Tanpa itu, Auth.js membaca host dari header `x-forwarded-host`. Di Netlify header itu berisi *permalink deploy* (`<id>--<site>.netlify.app`) yang berubah setiap deploy, sehingga callback Google selalu gagal (*redirect_uri_mismatch*). Karena itu nilainya diganti dan di-redeploy saat cutover.
 
 6. *Deploys → Trigger deploy* (tanpa cache) setelah env diisi, karena env hanya berlaku untuk deploy berikutnya.
 
@@ -176,7 +177,7 @@ Kalau semua lolos:
        npm run migrate:verify-r2 -- ./twibbon-files.sha256 --prune
      ```
      Prune hanya berjalan kalau semua file di DB ada dan cocok.
-4. Netlify → *Domain management* → tambah `twibbon.alakhyar.sch.id`.
+4. Netlify → *Domain management* → tambah `twibbon.alakhyar.sch.id`. Lalu ubah env **`AUTH_URL` → `https://twibbon.alakhyar.sch.id`** dan jalankan **Trigger deploy**. Mulai saat itu login di `<site>.netlify.app` akan diarahkan ke domain asli; itu wajar karena upload memang sedang dibekukan.
 5. Hostinger: **hapus A/AAAA `twibbon`**, lalu buat **CNAME `twibbon` → `<site>.netlify.app`**. Tunggu sertifikat HTTPS terbit (beberapa menit). Selama propagasi, VPS yang read-only tetap melayani guest.
 6. Salin log unduhan yang masuk ke VPS setelah dump (ulangi H+2):
    ```bash
