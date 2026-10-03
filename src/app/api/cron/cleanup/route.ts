@@ -6,9 +6,14 @@ import { purgeFileCache } from '@/lib/cdn';
 
 // POST /api/cron/cleanup — housekeeping, triggered daily by the Netlify
 // scheduled function netlify/functions/cleanup-cron.mts (or `npm run cleanup`).
-// Deletes the stored PNG of every twibbon that is soft-deleted or past its end
-// date. The row is kept (imageKey cleared) so download stats stay intact.
+// Deletes the stored PNG of every twibbon that was deleted by staff, or that
+// ended more than EXPIRED_GRACE_DAYS ago. The grace period keeps old share
+// links / OG previews working for a while and lets staff re-activate a recently
+// ended twibbon by extending its dates. The row is kept (imageKey cleared) so
+// download stats stay intact.
 export const dynamic = 'force-dynamic';
+
+const EXPIRED_GRACE_DAYS = 90;
 
 function authorized(req: NextRequest): boolean {
   const secret = process.env.CRON_SECRET;
@@ -25,10 +30,11 @@ export async function POST(req: NextRequest) {
   }
 
   const now = new Date();
+  const expiredBefore = new Date(now.getTime() - EXPIRED_GRACE_DAYS * 24 * 60 * 60 * 1000);
   const rows = await prisma.twibbon.findMany({
     where: {
       NOT: { imageKey: '' },
-      OR: [{ deletedAt: { not: null } }, { endDate: { lt: now } }],
+      OR: [{ deletedAt: { not: null } }, { endDate: { lt: expiredBefore } }],
     },
     select: { id: true, title: true, imageKey: true, deletedAt: true },
   });

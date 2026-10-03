@@ -1,5 +1,5 @@
 // Manually trigger the cleanup that normally runs daily on Netlify.
-// Deletes stored PNGs of twibbons that are soft-deleted or past their end date.
+// Deletes stored PNGs of twibbons deleted by staff, or ended more than 90 days ago.
 //
 //   CRON_SECRET=... npm run cleanup                                  # twibbon.alakhyar.sch.id
 //   CLEANUP_URL=https://<site>.netlify.app CRON_SECRET=... npm run cleanup  # before cutover

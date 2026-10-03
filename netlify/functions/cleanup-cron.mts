@@ -1,6 +1,7 @@
 import type { Config } from '@netlify/functions';
 
-// Daily housekeeping at 02:00 WIB (19:00 UTC). Delegates to the Next route so
+// Daily housekeeping at 02:00 WIB (19:00 UTC): removes files of twibbons deleted
+// by staff or ended >90 days ago. Delegates to the Next route so
 // the Prisma/R2 logic lives in one place; this function only triggers it.
 export default async () => {
   const base = process.env.URL;

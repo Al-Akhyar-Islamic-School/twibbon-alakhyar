@@ -5,7 +5,7 @@
 | App (Next.js 14) | **Netlify**, team Personal sekolah | Function berjalan di `cmh` (Ohio). Deploy otomatis dari branch `main`. |
 | Database | **TiDB Cloud Starter**, AWS `us-east-1` | Kompatibel MySQL; Prisma `provider = "mysql"`. |
 | File PNG | **Cloudflare R2**, bucket `twibbon-alakhyar` | Dilayani lewat `/file/<key>` (same-origin) dan di-cache durable di CDN Netlify. |
-| Cron | Netlify Scheduled Function `cleanup-cron` | Setiap hari 02:00 WIB → `POST /api/cron/cleanup`. |
+| Cron | Netlify Scheduled Function `cleanup-cron` | Setiap hari 02:00 WIB → `POST /api/cron/cleanup`. Menghapus file twibbon yang di-Hapus staf, atau yang sudah berakhir **lebih dari 90 hari**. |
 | Backup DB | GitHub Actions `db-backup` | Mingguan, terenkripsi, retensi 90 hari. |
 | DNS | Hostinger | `twibbon` → CNAME `<site>.netlify.app` |
 
