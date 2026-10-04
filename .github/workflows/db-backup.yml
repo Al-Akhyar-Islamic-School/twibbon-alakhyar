@@ -15,7 +15,7 @@ name: db-backup
 
 on:
   schedule:
-    - cron: '0 18 * * 0' # Sunday 18:00 UTC = Monday 01:00 WIB
+    - cron: '0 18 * * 0' # Sunday 18:00 UTC = Monday 02:00 WITA
   workflow_dispatch:
 
 permissions:
@@ -38,10 +38,14 @@ jobs:
         run: |
           set -euo pipefail
           stamp=$(date -u +%Y%m%dT%H%MZ)
+          # Tanpa --single-transaction: mysqldump memakai SAVEPOINT di mode itu,
+          # dan TiDB menolaknya ("SAVEPOINT sp does not exist"). Jadwalnya jatuh
+          # di jam tanpa penulisan, dan dump mematikan FOREIGN_KEY_CHECKS saat
+          # restore, jadi dump per tabel sudah cukup konsisten.
           mysqldump \
             --host="$TIDB_HOST" --port=4000 --user="$TIDB_USER" \
             --ssl-mode=VERIFY_IDENTITY --ssl-ca=/etc/ssl/certs/ca-certificates.crt \
-            --single-transaction --no-tablespaces --skip-lock-tables \
+            --no-tablespaces --skip-lock-tables \
             --set-gtid-purged=OFF --column-statistics=0 \
             "$TIDB_DATABASE" \
             | gzip -9 \
